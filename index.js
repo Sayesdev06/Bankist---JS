@@ -138,6 +138,26 @@ let CurrencyFormat = function (value, locale, currency) {
   }).format(value);
 };
 
+const LogOutTimer = function () {
+  const fix = function () {
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    const sec = String(time % 60).padStart(2, 0);
+    labelTimer.textContent = `${min}:${sec}`;
+
+    if (time === 0) {
+      clearInterval(timer);
+      labelWelcome.textContent = "Begin by logging in ▶";
+      containerApp.style.opacity = 0;
+    }
+
+    time--;
+  };
+  let time = 120;
+  fix();
+  const timer = setInterval(fix, 1000);
+  return timer;
+};
+
 const displayMovements = function (acc, sort = false) {
   /// Remove the html template of movements
   containerMovements.innerHTML = "";
@@ -216,11 +236,7 @@ const updateUi = function (currentAccount) {
 
 // Login Event
 
-let currentAccount;
-
-currentAccount = account1;
-updateUi(currentAccount);
-containerApp.style.opacity = 100;
+let currentAccount, timer;
 
 btnLogin.addEventListener("click", function (e) {
   // prevent the form from submitting
@@ -250,17 +266,17 @@ btnLogin.addEventListener("click", function (e) {
       currentAccount.locale,
       options
     ).format(now);
-    // const now = new Date();
-    // const day = `${now.getDay()}`.padStart(2, 0);
-    // const month = `${now.getMonth()}`.padStart(2, 0);
-    // const year = now.getFullYear();
-    // const hour = `${now.getHours()}`.padStart(2, 0);
-    // const minute = now.getMinutes();
-
-    // labelDate.textContent = `${day}/${month}/${year},${hour}:${minute} `;
-
     inputLoginPin.value = inputLoginUsername.value = "";
+
+    if (timer) {
+      clearInterval(timer);
+    }
+    timer = LogOutTimer();
+
     updateUi(currentAccount);
+
+    clearInterval(timer);
+    timer = LogOutTimer();
   }
 });
 
@@ -278,12 +294,17 @@ btnTransfer.addEventListener("click", function (e) {
     currentAccount.balance >= amount &&
     receiverAcc.username !== currentAccount.username
   ) {
-    currentAccount.movements.push(-amount);
-    receiverAcc.movements.push(amount);
+    setTimeout(function () {
+      currentAccount.movements.push(-amount);
+      receiverAcc.movements.push(amount);
 
-    currentAccount.movementsDates.push(new Date().toISOString());
-    receiverAcc.movementsDates.push(new Date().toISOString());
-    updateUi(currentAccount);
+      currentAccount.movementsDates.push(new Date().toISOString());
+      receiverAcc.movementsDates.push(new Date().toISOString());
+      updateUi(currentAccount);
+
+      clearInterval(timer);
+      timer = LogOutTimer();
+    }, 2500);
   }
 });
 
@@ -296,11 +317,16 @@ btnLoan.addEventListener("click", function (e) {
     loanAmount > 0 &&
     currentAccount.movements.some((mov) => mov >= loanAmount * 0.1)
   ) {
-    currentAccount.movements.push(loanAmount);
+    setTimeout(function () {
+      currentAccount.movements.push(loanAmount);
 
-    currentAccount.movementsDates.push(new Date().toISOString());
+      currentAccount.movementsDates.push(new Date().toISOString());
 
-    updateUi(currentAccount);
+      updateUi(currentAccount);
+
+      clearInterval(timer);
+      timer = LogOutTimer();
+    }, 2500);
   }
 });
 
@@ -331,10 +357,3 @@ btnSort.addEventListener("click", function (e) {
   displayMovements(currentAccount, !sorted);
   sorted = !sorted;
 });
-
-// Date
-
-// let calcPassedDays = function (date1, date2) {
-//   return Math.round(Math.abs(date1 - date2) / (1000 * 60 * 60 * 24));
-// };
-// console.log(calcPassedDays(new Date(2023, 5, 10), new Date(2023, 5, 25)));
